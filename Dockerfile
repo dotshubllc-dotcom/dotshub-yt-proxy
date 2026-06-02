@@ -1,13 +1,23 @@
 FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && \
-    rm -rf /var/lib/apt/lists/*
+# ffmpeg (yt-dlp) + git/node (servidor bgutil de PoTokens)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      ffmpeg git curl ca-certificates gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir yt-dlp
+# bgutil PoToken provider — genera PoTokens (BotGuard), lo mismo que usan los sitios de
+# descarga. Es lo que desbloquea los formatos del cliente web desde IPs de servidor.
+RUN git clone --depth 1 https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git /bgutil && \
+    cd /bgutil/server && npm ci --no-audit --no-fund && npx tsc
+
+# yt-dlp + plugin bgutil (interfaz provider). En Python 3.11 quedan versiones compatibles.
+RUN pip install --no-cache-dir yt-dlp bgutil-ytdlp-pot-provider
 
 WORKDIR /app
-COPY main.py .
+COPY main.py entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 
 EXPOSE 8080
-# Auto-update yt-dlp on every cold start so it stays current with YouTube changes
-CMD pip install -q --upgrade yt-dlp && python3 main.py
+CMD ["./entrypoint.sh"]

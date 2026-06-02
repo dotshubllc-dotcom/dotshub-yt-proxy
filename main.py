@@ -189,7 +189,13 @@ class Handler(BaseHTTPRequestHandler):
                 ver = v.stdout.strip()
             except Exception:
                 ver = 'unknown'
-            body = f'ok build=2 yt-dlp={ver} cookies={"yes" if COOKIES_FILE else "no"}'.encode()
+            # ¿está vivo el servidor bgutil de PoTokens?
+            try:
+                urllib.request.urlopen('http://127.0.0.1:4416/ping', timeout=3)
+                pot = 'up'
+            except Exception:
+                pot = 'down'
+            body = f'ok build=3 yt-dlp={ver} cookies={"yes" if COOKIES_FILE else "no"} bgutil={pot}'.encode()
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-Length', str(len(body)))
