@@ -202,18 +202,6 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
-        if self.path.startswith('/debug'):
-            from urllib.parse import urlparse, parse_qs
-            q = parse_qs(urlparse(self.path).query)
-            u = (q.get('u') or [''])[0] or 'https://www.youtube.com/watch?v=Qs-Is3xEzGk'
-            ck = ['--cookies', COOKIES_FILE] if COOKIES_FILE else []
-            cmd = [YT_DLP, '-v', '--no-config', '--no-warnings', '--no-playlist',
-                   '--extractor-args', 'youtube:player_client=web,web_safari,tv,mweb'] + ck + \
-                  ['--simulate', '--dump-json', u]
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-            out = (r.stderr or '')[-3500:] + '\n--- STDOUT len: ' + str(len(r.stdout or '')) + ' rc=' + str(r.returncode)
-            self._json(200, {'debug': out})
-            return
         self._json(404, {'error': 'Not found'})
 
     def do_OPTIONS(self):
